@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nightingale — Nursing Clinical Reasoning Tutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F7F5;
+    --surface:#FFFFFF;
+    --surface-alt:#EAF1EE;
+    --border:#D8E6E1;
+    --ink:#17302F;
+    --ink-soft:#51706D;
+    --ink-faint:#89A29F;
+    --teal:#2C6E6B;
+    --teal-dark:#1E4F4D;
+    --teal-pale:#DCEDEA;
+    --coral:#DE7256;
+    --coral-pale:#FBE7E0;
+    --gold:#AC8526;
+    --gold-pale:#F8F0D9;
+    --green:#4C8C6B;
+    --green-pale:#E1F0E5;
+    --shadow: 0 1px 2px rgba(23,48,47,0.06), 0 8px 24px -12px rgba(23,48,47,0.14);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:'Fraunces',serif; margin:0; letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  ::selection{background:var(--teal-pale);}
+  a{color:var(--teal-dark);}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit; font-size:14px;}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+
+  /* ---------- App shell ---------- */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:250px; flex-shrink:0; background:var(--teal-dark); color:#EAF3F1;
+    display:flex; flex-direction:column; padding:22px 14px; gap:4px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:6px 10px 22px 10px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#4C9E97,#2C6E6B);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Fraunces',serif;font-weight:700;font-size:16px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  .brand h1{font-size:18px; color:#fff; font-weight:600;}
+  .brand span{display:block; font-size:11px; color:#9FC4BF; letter-spacing:0.04em; text-transform:uppercase; margin-top:1px;}
+
+  .navgroup-label{font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:#7FADA6; padding:14px 12px 6px;}
+  .navitem{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; border:none;
+    background:transparent; color:#CFE6E2; text-align:left; font-size:13.5px; font-weight:500; width:100%;
+    transition:background .15s ease, color .15s ease;
+  }
+  .navitem:hover{background:rgba(255,255,255,0.06); color:#fff;}
+  .navitem.active{background:#EAF3F1; color:var(--teal-dark); font-weight:600;}
+  .navitem .num{
+    width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,0.12); color:#EAF3F1;
+    display:flex;align-items:center;justify-content:center;font-size:10.5px; font-family:'IBM Plex Mono',monospace; flex-shrink:0;
+  }
+  .navitem.active .num{background:var(--teal); color:#fff;}
+  .sidebar-foot{margin-top:auto; padding:10px 12px; font-size:11px; color:#7FADA6; line-height:1.5;}
+
+  .main{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+  /* ---------- Top orchestration bar ---------- */
+  .topbar{
+    background:var(--surface); border-bottom:1px solid var(--border); padding:10px 26px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .pipeline{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .pnode{
+    display:flex; align-items:center; gap:6px; padding:5px 10px 5px 6px; border-radius:999px;
+    background:var(--surface-alt); border:1px solid var(--border); font-size:11.5px; color:var(--ink-soft);
+    transition:all .35s ease;
+  }
+  .pnode .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint); transition:all .35s ease;}
+  .pnode.fired{background:var(--teal-pale); border-color:#B7DAD4; color:var(--teal-dark); font-weight:600;}
+  .pnode.fired .dot{background:var(--teal); box-shadow:0 0 0 4px rgba(44,110,107,0.15);}
+  .pconn{width:12px; height:1px; background:var(--border);}
+  .topbar-spacer{flex:1;}
+  .logbtn{
+    display:flex; align-items:center; gap:6px; background:var(--surface-alt); border:1px solid var(--border);
+    padding:6px 12px; border-radius:999px; font-size:12.5px; color:var(--ink-soft); font-weight:500;
+  }
+  .logbtn:hover{background:var(--teal-pale);}
+  .status-dot{width:7px;height:7px;border-radius:50%; background:var(--green);}
+
+  .content{flex:1; padding:26px 32px 60px; max-width:980px; width:100%; margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block; animation:fadein .25s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .page-head{margin-bottom:22px;}
+  .page-head .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--teal); font-weight:600; margin-bottom:6px;}
+  .page-head h2{font-size:26px; color:var(--ink); font-weight:600;}
+  .page-head p{color:var(--ink-soft); margin-top:6px; max-width:640px; font-size:14px;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow); margin-bottom:18px;}
+  .card h3{font-size:16px; margin-bottom:12px; color:var(--ink);}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr;}}
+
+  label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;}
+  input[type=text],input[type=number],input[type=password],select,textarea{
+    width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:9px; background:#fff; color:var(--ink);
+  }
+  textarea{resize:vertical; min-height:70px;}
+  .field{margin-bottom:14px;}
+  .hint{font-size:11.5px; color:var(--ink-faint); margin-top:4px;}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; background:var(--teal); color:#fff; border:none;
+    padding:10px 18px; border-radius:10px; font-weight:600; font-size:13.5px; transition:background .15s ease, transform .1s ease;
+  }
+  .btn:hover{background:var(--teal-dark);}
+  .btn:active{transform:scale(0.98);}
+  .btn.secondary{background:var(--surface-alt); color:var(--teal-dark); border:1px solid var(--border);}
+  .btn.secondary:hover{background:var(--teal-pale);}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn.small{padding:6px 12px; font-size:12px;}
+
+  /* level selector */
+  .level-row{display:flex; gap:8px;}
+  .level-chip{
+    flex:1; text-align:center; padding:10px 4px; border-radius:10px; border:1px solid var(--border); background:#fff;
+    font-size:12.5px; font-weight:600; color:var(--ink-soft);
+  }
+  .level-chip small{display:block; font-weight:500; color:var(--ink-faint); font-size:10.5px; margin-top:2px;}
+  .level-chip.sel{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .level-chip.sel small{color:#CFE6E2;}
+
+  .tag{display:inline-flex; align-items:center; gap:5px; background:var(--surface-alt); border:1px solid var(--border); padding:4px 10px; border-radius:999px; font-size:12px; color:var(--ink-soft); margin:2px 4px 2px 0;}
+  .tag button{background:none; border:none; color:var(--ink-faint); font-size:13px; line-height:1; padding:0;}
+  .taglist{display:flex; flex-wrap:wrap; margin-bottom:8px; min-height:20px;}
+
+  /* trust badge */
+  .trust{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11.5px; font-weight:600; font-family:'IBM Plex Mono',monospace;}
+  .trust.high{background:var(--green-pale); color:#2E6B4A;}
+  .trust.mid{background:var(--gold-pale); color:var(--gold);}
+  .trust.low{background:var(--coral-pale); color:#B14B30;}
+  .trust .bar{width:34px; height:5px; border-radius:3px; background:rgba(0,0,0,0.08); overflow:hidden; position:relative;}
+  .trust .bar i{position:absolute; left:0; top:0; bottom:0; background:currentColor;}
+  .sources-note{font-size:11.5px; color:var(--ink-faint); margin-top:6px; line-height:1.5;}
+
+  /* chat */
+  .chat-window{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); display:flex; flex-direction:column; height:560px;}
+  .chat-log{flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px;}
+  .msg{max-width:82%; padding:12px 14px; border-radius:14px; font-size:14px; line-height:1.55;}
+  .msg.user{align-self:flex-end; background:var(--teal); color:#fff; border-bottom-right-radius:4px;}
+  .msg.ai{align-self:flex-start; background:var(--surface-alt); border:1px solid var(--border); border-bottom-left-radius:4px; max-width:88%;}
+  .msg.ai .step{margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed var(--border);}
+  .msg.ai .step:last-of-type{border-bottom:none; padding-bottom:0; margin-bottom:0;}
+  .msg.ai .step-title{font-weight:700; color:var(--teal-dark); font-size:12.5px; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:3px;}
+  .msg.system-note{align-self:center; background:none; color:var(--ink-faint); font-size:11.5px; font-style:italic;}
+  .chat-input-row{display:flex; gap:8px; padding:14px; border-top:1px solid var(--border);}
+  .chat-input-row textarea{flex:1; min-height:44px; max-height:120px;}
+  .typing{display:flex; gap:4px; align-self:flex-start; padding:10px 14px;}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--ink-faint); animation:bounce 1.2s infinite ease-in-out;}
+  .typing span:nth-child(2){animation-delay:.15s;} .typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0); opacity:.5;} 40%{transform:translateY(-4px); opacity:1;}}
+
+  /* quiz */
+  .qcard{border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; background:#fff;}
+  .opt{display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:8px; background:#fff; transition:background .15s ease;}
+  .opt:hover{background:var(--surface-alt);}
+  .opt.correct{background:var(--green-pale); border-color:#B9DFC5;}
+  .opt.incorrect{background:var(--coral-pale); border-color:#F0C7B8;}
+  .opt input{margin-top:2px;}
+  .progress-track{height:6px; background:var(--surface-alt); border-radius:4px; overflow:hidden; margin-bottom:16px;}
+  .progress-fill{height:100%; background:var(--teal); border-radius:4px; transition:width .3s ease;}
+
+  .feedback-item{border-left:3px solid var(--border); padding:10px 14px; margin-bottom:10px; border-radius:0 8px 8px 0; background:var(--surface-alt);}
+  .feedback-item.wrong{border-left-color:var(--coral);}
+  .feedback-item.right{border-left-color:var(--green);}
+
+  /* planner */
+  .plan-day{display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--border);}
+  .plan-day:last-child{border-bottom:none;}
+  .plan-day .dlabel{width:64px; flex-shrink:0; font-weight:700; color:var(--teal-dark); font-size:13px; padding-top:2px;}
+  .plan-day .dbody{flex:1;}
+  .plan-day .dfocus{font-weight:600; font-size:13.5px; margin-bottom:4px;}
+  .plan-day ul{margin:4px 0 0; padding-left:18px; font-size:13px; color:var(--ink-soft);}
+
+  /* analytics */
+  .stat-row{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px;}
+  .stat{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow);}
+  .stat .num{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:var(--teal-dark);}
+  .stat .lbl{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  canvas{max-width:100%;}
+
+  .empty{text-align:center; padding:40px 20px; color:var(--ink-faint);}
+  .empty h4{color:var(--ink-soft); margin-bottom:6px; font-size:15px;}
+
+  /* activity log drawer */
+  .drawer{
+    position:fixed; top:0; right:-380px; width:360px; height:100%; background:var(--surface); border-left:1px solid var(--border);
+    box-shadow:-8px 0 24px rgba(0,0,0,0.08); z-index:50; transition:right .3s ease; display:flex; flex-direction:column;
+  }
+  .drawer.open{right:0;}
+  .drawer-head{padding:16px 18px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;}
+  .drawer-head h4{font-size:14px;}
+  .drawer-head button{background:none; border:none; font-size:18px; color:var(--ink-faint);}
+  .drawer-body{flex:1; overflow-y:auto; padding:14px 18px; display:flex; flex-direction:column; gap:10px;}
+  .logline{font-size:12px; line-height:1.5; padding-bottom:10px; border-bottom:1px solid var(--surface-alt);}
+  .logline .lt{color:var(--ink-faint); font-family:'IBM Plex Mono',monospace; font-size:10.5px;}
+  .logline .lstage{font-weight:700; color:var(--teal-dark); text-transform:uppercase; font-size:10px; letter-spacing:.04em;}
+  .overlay{position:fixed; inset:0; background:rgba(23,48,47,0.25); z-index:40; display:none;}
+  .overlay.open{display:block;}
+
+  .banner{display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:10px; background:var(--gold-pale); border:1px solid #EBDBA0; color:#7A5E12; font-size:12.5px; margin-bottom:18px;}
+  .banner.err{background:var(--coral-pale); border-color:#F0C7B8; color:#9C3E24;}
+  .banner strong{display:block; margin-bottom:2px;}
+
+  .kb-list{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .kb-item{font-size:12px; color:var(--ink-soft); background:var(--surface-alt); border:1px solid var(--border); padding:8px 10px; border-radius:8px;}
+  .kb-item b{display:block; color:var(--ink); font-size:12.5px; margin-bottom:1px;}
+
+  @media (max-width:860px){
+    .sidebar{position:fixed; z-index:60; height:100%; transform:translateX(-100%); transition:transform .25s ease;}
+    .sidebar.open{transform:translateX(0);}
+    .content{padding:20px 16px 60px;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">N</div>
+      <div>
+        <h1>Nightingale</h1>
+        <span>Clinical Tutor</span>
+      </div>
+    </div>
+
+    <div class="navgroup-label">Learn</div>
+    <button class="navitem active" data-tab="overview"><span class="num">•</span> Overview</button>
+    <button class="navitem" data-tab="profile"><span class="num">1</span> Learner Profile</button>
+    <button class="navitem" data-tab="reasoning"><span class="num">2</span> Clinical Reasoning Chat</button>
+    <button class="navitem" data-tab="quiz"><span class="num">3</span> Quiz &amp; Feedback</button>
+    <button class="navitem" data-tab="planner"><span class="num">5</span> Learning Planner</button>
+    <button class="navitem" data-tab="analytics"><span class="num">6</span> Progress Analytics</button>
+
+    <div class="navgroup-label">System</div>
+    <button class="navitem" data-tab="settings">⚙ Settings &amp; API Key</button>
+
+    <div class="sidebar-foot">
+      Agents 4 (Feedback) &amp; 8 (Knowledge &amp; Reasoning) run automatically inside every response. Agent 7 (Orchestrator) coordinates all agents — watch it work via the activity log.
+    </div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="pipeline" id="pipeline"></div>
+      <div class="topbar-spacer"></div>
+      <button class="logbtn" id="openLog"><span class="status-dot" id="statusDot"></span> Agent activity log</button>
+    </div>
+
+    <div class="content">
+
+      <!-- ---------------- OVERVIEW ---------------- -->
+      <section class="view active" id="view-overview">
+        <div class="page-head">
+          <div class="eyebrow">Agentic tutoring system</div>
+          <h2>An eight-agent team, working for one learner.</h2>
+          <p>Nightingale pairs a Learner Profiling Agent, a Clinical Reasoning tutor, a Quiz Generator, an Evidence-Based Feedback agent, a Learning Planner and a Progress Analyst — all coordinated by an Orchestration layer and grounded by a Knowledge &amp; Reasoning layer before anything reaches you.</p>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <h3>1 · Learner Profiling Agent</h3>
+            <p style="font-size:13px;color:var(--ink-soft)">Captures your experience level (1–5), goals, strengths and weak spots so every other agent can personalize its output.</p>
+            <button class="btn secondary small" data-goto="profile">Set up profile →</button>
+          </div>
+          <div class="card">
+            <h3>2 · Clinical Reasoning Chat</h3>
+            <p style="font-size:13px;color:var(--ink-soft)">Describe a case or symptom. The tutor walks you through reasoning step by step, in plain language.</p>
+            <button class="btn secondary small" data-goto="reasoning">Start a case →</button>
+          </div>
+          <div class="card">
+            <h3>3 · Quiz Generator + 4 · Feedback</h3>
+            <p style="font-size:13px;color:var(--ink-soft)">Pick a topic, difficulty and question count. Wrong answers get plain-language, evidence-based correction with a trustworthiness score.</p>
+            <button class="btn secondary small" data-goto="quiz">Take a quiz →</button>
+          </div>
+          <div class="card">
+            <h3>5 · Learning Planner</h3>
+            <p style="font-size:13px;color:var(--ink-soft)">Builds a paced weekly plan, recommends what to study next, and simulates where it leads.</p>
+            <button class="btn secondary small" data-goto="planner">Build a plan →</button>
+          </div>
+          <div class="card">
+            <h3>6 · Progress Analysis Agent</h3>
+            <p style="font-size:13px;color:var(--ink-soft)">Tracks scores, competency growth and trends across every quiz you take.</p>
+            <button class="btn secondary small" data-goto="analytics">View progress →</button>
+          </div>
+          <div class="card">
+            <h3>7 · Orchestrator &amp; 8 · Knowledge Layer</h3>
+            <p style="font-size:13px;color:var(--ink-soft)">Run silently behind every action: planning, executing, monitoring, reflecting — and grounding answers in curated nursing sources.</p>
+            <button class="btn secondary small" id="peekKB">See knowledge sources →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------- PROFILE (Agent 1) ---------------- -->
+      <section class="view" id="view-profile">
+        <div class="page-head">
+          <div class="eyebrow">Agent 1 — Learner Profiling</div>
+          <h2>Tell us where you're starting from.</h2>
+          <p>This profile is passed to every other agent so explanations, quiz difficulty, feedback and your study plan all match your level.</p>
+        </div>
+
+        <div class="card">
+          <h3>Experience level</h3>
+          <div class="level-row" id="levelRow"></div>
+          <div class="hint" id="levelHint" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="grid2">
+            <div>
+              <div class="field">
+                <label>Your learning goal</label>
+                <textarea id="pf-goal" placeholder="e.g. Feel confident recognizing early sepsis in med-surg patients before my next placement.">Build confidence with clinical reasoning for common med-surg presentations.</textarea>
+              </div>
+              <div class="field">
+                <label>Nursing focus / specialty (optional)</label>
+                <input type="text" id="pf-specialty" placeholder="e.g. Medical-Surgical, ICU, Pediatrics, OB">
+              </div>
+            </div>
+            <div>
+              <div class="field">
+                <label>Strengths</label>
+                <input type="text" id="pf-strength-input" placeholder="Type a strength and press Enter">
+                <div class="taglist" id="pf-strengths"></div>
+              </div>
+              <div class="field">
+                <label>Weaknesses / concepts to improve</label>
+                <input type="text" id="pf-weak-input" placeholder="Type a weak area and press Enter">
+                <div class="taglist" id="pf-weaknesses"></div>
+              </div>
+            </div>
+          </div>
+          <button class="btn" id="saveProfile">Save profile</button>
+          <span id="profileSavedNote" class="hint" style="margin-left:10px;"></span>
+        </div>
+
+        <div class="card" id="profileSummaryCard" style="display:none;">
+          <h3>Current profile snapshot</h3>
+          <div id="profileSummary" style="font-size:13.5px; color:var(--ink-soft); line-height:1.7;"></div>
+        </div>
+      </section>
+
+      <!-- ---------------- REASONING CHAT (Agent 2) ---------------- -->
+      <section class="view" id="view-reasoning">
+        <div class="page-head">
+          <div class="eyebrow">Agent 2 — Clinical Reasoning</div>
+          <h2>Walk through a case, one step at a time.</h2>
+          <p>Describe a patient scenario, symptom cluster or clinical question. The tutor breaks its reasoning into simple, numbered steps rather than jumping to the answer.</p>
+        </div>
+        <div class="chat-window">
+          <div class="chat-log" id="chatLog"></div>
+          <div class="chat-input-row">
+            <textarea id="chatInput" placeholder="e.g. A 68-year-old post-op patient is confused, RR 24, SpO2 91% on room air. What should I think through?"></textarea>
+            <button class="btn" id="sendChat">Send</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------- QUIZ (Agent 3 + 4) ---------------- -->
+      <section class="view" id="view-quiz">
+        <div class="page-head">
+          <div class="eyebrow">Agent 3 — Quiz Generator · Agent 4 — Feedback</div>
+          <h2>Test yourself, then get feedback that explains why.</h2>
+          <p>Choose a topic and format. Every result includes plain-language correction and a trustworthiness score for the explanation.</p>
+        </div>
+
+        <div class="card" id="quizSetupCard">
+          <div class="grid2">
+            <div class="field">
+              <label>Topic</label>
+              <input type="text" id="qz-topic" placeholder="e.g. Fluid & electrolyte balance, Wound care, Cardiac medications">
+            </div>
+            <div class="field">
+              <label>Number of questions</label>
+              <select id="qz-count">
+                <option value="3">3 questions</option>
+                <option value="5" selected>5 questions</option>
+                <option value="8">8 questions</option>
+                <option value="10">10 questions</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label>Question style</label>
+              <select id="qz-style">
+                <option value="multiple choice">Multiple choice</option>
+                <option value="scenario-based multiple choice">Scenario-based (NCLEX style)</option>
+                <option value="true/false">True / False</option>
+                <option value="select-all-that-apply">Select-all-that-apply</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Difficulty</label>
+              <select id="qz-diff">
+                <option value="matched to profile level">Match my profile level</option>
+                <option value="1">Level 1 — Beginner</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+                <option value="4">Level 4</option>
+                <option value="5">Level 5 — Expert</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn" id="genQuiz">Generate quiz</button>
+        </div>
+
+        <div id="quizArea"></div>
+        <div id="feedbackArea"></div>
+      </section>
+
+      <!-- ---------------- PLANNER (Agent 5) ---------------- -->
+      <section class="view" id="view-planner">
+        <div class="page-head">
+          <div class="eyebrow">Agent 5 — Learning Planner</div>
+          <h2>A study plan paced to how you actually learn.</h2>
+          <p>Based on your profile and quiz history, this builds a weekly plan, suggests what to study next, and simulates where it should lead.</p>
+        </div>
+        <div class="card">
+          <div class="grid2">
+            <div class="field">
+              <label>Days per week you can study</label>
+              <select id="pl-days">
+                <option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Minutes per session</label>
+              <select id="pl-mins">
+                <option>20</option><option selected>30</option><option>45</option><option>60</option><option>90</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Upcoming exam / target date (optional)</label>
+            <input type="text" id="pl-target" placeholder="e.g. NCLEX in 6 weeks, unit exam on fluids next Friday">
+          </div>
+          <button class="btn" id="genPlan">Generate learning plan</button>
+        </div>
+        <div id="planArea"></div>
+      </section>
+
+      <!-- ---------------- ANALYTICS (Agent 6) ---------------- -->
+      <section class="view" id="view-analytics">
+        <div class="page-head">
+          <div class="eyebrow">Agent 6 — Progress Analysis</div>
+          <h2>Your competency growth, tracked over time.</h2>
+          <p>Every quiz you complete feeds this agent. It watches scores, per-topic strength and trend direction.</p>
+        </div>
+        <div id="analyticsArea"></div>
+      </section>
+
+      <!-- ---------------- SETTINGS ---------------- -->
+      <section class="view" id="view-settings">
+        <div class="page-head">
+          <div class="eyebrow">System</div>
+          <h2>Connect your Anthropic API key.</h2>
+          <p>Your key is kept in memory for this browser tab only — it is never saved to disk, sent anywhere besides Anthropic's API, or stored when you close the tab.</p>
+        </div>
+        <div class="card">
+          <div class="field">
+            <label>Anthropic API key</label>
+            <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+          </div>
+          <div class="field">
+            <label>Model</label>
+            <input type="text" id="modelInput" value="claude-sonnet-5">
+            <div class="hint">Change this if your key has access to a different model string.</div>
+          </div>
+          <button class="btn" id="saveKey">Save for this session</button>
+          <span id="keySavedNote" class="hint" style="margin-left:10px;"></span>
+          <div class="banner" style="margin-top:16px;">
+            <div>
+              <strong>How calls are made</strong>
+              This file calls the Anthropic Messages API directly from your browser using <span class="mono">fetch()</span>, with the <span class="mono">anthropic-dangerous-direct-browser-access</span> header. No server, no build step — just this HTML file.
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Activity log drawer -->
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h4>Orchestrator (Agent 7) activity log</h4>
+    <button id="closeLog">✕</button>
+  </div>
+  <div class="drawer-body" id="logBody">
+    <div class="empty" style="padding:20px 6px;"><h4 style="font-size:13px;">No activity yet</h4>Trigger an agent — chat, quiz, plan — to see goal → plan → execute → monitor → reflect in real time.</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   NIGHTINGALE — single-file agentic nursing tutor
+   Agents: 1 Profiling, 2 Reasoning, 3 Quiz, 4 Feedback, 5 Planner,
+           6 Progress Analysis, 7 Orchestrator, 8 Knowledge & Reasoning
+   ========================================================================= */
+
+/* ---------------- Config / state ---------------- */
+const CONFIG = {
+  apiKey: "",
+  model: "claude-sonnet-5",
+  endpoint: "https://api.anthropic.com/v1/messages"
+};
+
+const state = {
+  profile: {
+    level: 2,
+    goal: "Build confidence with clinical reasoning for common med-surg presentations.",
+    specialty: "",
+    strengths: [],
+    weaknesses: [],
+    saved: false
+  },
+  chatMessages: [],       // {role, content} sent to API
+  performanceHistory: [], // {date, topic, level, score, total, pct}
+  lastQuiz: null,
+  lastPlan: null
+};
+
+const LEVELS = [
+  {v:1, label:"Novice", desc:"New to clinical care"},
+  {v:2, label:"Advanced beginner", desc:"Some clinical exposure"},
+  {v:3, label:"Competent", desc:"Independent on routine cases"},
+  {v:4, label:"Proficient", desc:"Sees the whole picture"},
+  {v:5, label:"Expert", desc:"Intuitive, deep pattern grasp"}
+];
+
+/* ---------------- Simulated Knowledge Base (Agent 8 grounding) ----------------
+   In place of live external retrieval, Agent 8 grounds every response in this
+   curated set of source *categories* that reputable nursing education relies
+   on. The model is instructed to reason within these categories and to score
+   its own trustworthiness against them. This is disclosed to the learner. */
+const KNOWLEDGE_SOURCES = [
+  {name:"Core nursing textbooks", detail:"Lippincott, Mosby's, Taylor's Fundamentals-level content"},
+  {name:"Evidence-based practice guidelines", detail:"AACN, ANA, WHO/CDC clinical guidance"},
+  {name:"Pharmacology references", detail:"Standard drug-class mechanisms, contraindications, nursing considerations"},
+  {name:"NCLEX-style clinical judgment frameworks", detail:"NCJMM steps: recognize cues → analyze → prioritize hypotheses → generate solutions → take action → evaluate"},
+  {name:"Pathophysiology fundamentals", detail:"Mechanism-based reasoning for common conditions"},
+  {name:"Nursing process (ADPIE)", detail:"Assessment, Diagnosis, Planning, Implementation, Evaluation"}
+];
+
+function knowledgeContextBlock(){
+  return KNOWLEDGE_SOURCES.map(s => `- ${s.name}: ${s.detail}`).join("\n");
+}
+
+/* ================= Orchestrator (Agent 7) ================= */
+const Orchestrator = {
+  async run(agentLabel, goalText, taskFn){
+    setStatus("busy");
+    logStage(agentLabel, "GOAL", goalText);
+    logStage(agentLabel, "PLAN", "Gathering learner profile + performance history, selecting Agent 8 knowledge context, drafting prompt.");
+    firePipeline(agentLabel);
+    let result, error;
+    try{
+      logStage(agentLabel, "EXECUTE", "Calling model with grounded context.");
+      result = await taskFn();
+      logStage(agentLabel, "MONITOR", "Response received — validating structure and trustworthiness field.");
+    }catch(e){
+      error = e;
+      logStage(agentLabel, "MONITOR", "Execution failed: " + e.message, true);
+    }
+    logStage(agentLabel, "REFLECT", error ? "Flagging for retry / user notice." : "Integrating result into learner profile & history for future agents.");
+    setStatus("idle");
+    if(error) throw error;
+    return result;
+  }
+};
+
+function setStatus(s){
+  const dot = document.getElementById('statusDot');
+  dot.style.background = s === "busy" ? "var(--gold)" : "var(--green)";
+}
+
+/* ---- pipeline visual (signature element) ---- */
+const PIPELINE_AGENTS = [
+  {id:"profiling", label:"1 Profile"},
+  {id:"knowledge", label:"8 Knowledge"},
+  {id:"reasoning", label:"2 Reasoning"},
+  {id:"quiz", label:"3 Quiz"},
+  {id:"feedback", label:"4 Feedback"},
+  {id:"planner", label:"5 Planner"},
+  {id:"analysis", label:"6 Analysis"},
+  {id:"orchestrator", label:"7 Orchestrator"}
+];
+function renderPipeline(){
+  const el = document.getElementById('pipeline');
+  el.innerHTML = PIPELINE_AGENTS.map((a,i) =>
+    `<div class="pnode" id="pnode-${a.id}"><span class="dot"></span>${a.label}</div>` +
+    (i < PIPELINE_AGENTS.length-1 ? `<div class="pconn"></div>` : "")
+  ).join("");
+}
+function firePipeline(agentLabel){
+  // map friendly agent label -> node ids to light up
+  const map = {
+    "Learner Profiling Agent":["profiling","orchestrator"],
+    "Knowledge & Reasoning Agent":["knowledge","orchestrator"],
+    "Clinical Reasoning Agent":["profiling","knowledge","reasoning","orchestrator"],
+    "Quiz Generator Agent":["profiling","knowledge","quiz","orchestrator"],
+    "Feedback Agent":["knowledge","feedback","orchestrator"],
+    "Learning Planner Agent":["profiling","knowledge","planner","orchestrator"],
+    "Progress Analysis Agent":["analysis","orchestrator"]
+  };
+  document.querySelectorAll('.pnode').forEach(n => n.classList.remove('fired'));
+  (map[agentLabel]||["orchestrator"]).forEach(id => {
+    const n = document.getElementById('pnode-'+id);
+    if(n) n.classList.add('fired');
+  });
+}
+
+/* ---- activity log drawer ---- */
+function logStage(agent, stage, text, isError){
+  const body = document.getElementById('logBody');
+  if(body.querySelector('.empty')) body.innerHTML = "";
+  const line = document.createElement('div');
+  line.className = "logline";
+  const time = new Date().toLocaleTimeString();
+  line.innerHTML = `<div class="lt">${time} · ${agent}</div><div class="lstage" style="${isError?'color:var(--coral)':''}">${stage}</div><div>${escapeHtml(text)}</div>`;
+  body.prepend(line);
+}
+document.getElementById('openLog').onclick = () => {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+};
+document.getElementById('closeLog').onclick = closeDrawer;
+document.getElementById('overlay').onclick = closeDrawer;
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+/* ================= Anthropic API call ================= */
+async function callClaude(systemPrompt, messages, {json=false, maxTokens=1600} = {}){
+  if(!CONFIG.apiKey){
+    switchTab('settings');
+    throw new Error("Add your Anthropic API key in Settings first.");
+  }
+  const body = {
+    model: CONFIG.model,
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages: messages
+  };
+  const res = await fetch(CONFIG.endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": CONFIG.apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    let msg = res.status + " " + res.statusText;
+    try{ const j = await res.json(); if(j?.error?.message) msg = j.error.message; }catch(e){}
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+  if(!json) return text;
+  return parseJsonLoose(text);
+}
+
+function parseJsonLoose(text){
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^```json\s*/i, "").replace(/^```\s*/,"").replace(/```\s*$/,"");
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if(start !== -1 && end !== -1) cleaned = cleaned.slice(start, end+1);
+  try{
+    return JSON.parse(cleaned);
+  }catch(e){
+    throw new Error("Could not parse model response as JSON. Raw text: " + text.slice(0,200));
+  }
+}
+
+/* ================= Agent 8: Knowledge & Reasoning context builder ================= */
+function buildAgentEightContext(){
+  const p = state.profile;
+  const perfSummary = state.performanceHistory.length
+    ? state.performanceHistory.slice(-6).map(h => `${h.topic}: ${h.pct}% (level ${h.level})`).join("; ")
+    : "No quiz history yet.";
+  return `
+LEARNER PROFILE (from Agent 1):
+- Experience level: ${p.level}/5 (${LEVELS[p.level-1].label} — ${LEVELS[p.level-1].desc})
+- Goal: ${p.goal || "Not specified"}
+- Specialty focus: ${p.specialty || "General"}
+- Self-reported strengths: ${p.strengths.join(", ") || "None listed"}
+- Self-reported weaknesses / areas to improve: ${p.weaknesses.join(", ") || "None listed"}
+
+RECENT PERFORMANCE (from Agent 6): ${perfSummary}
+
+KNOWLEDGE & REASONING LAYER (Agent 8) — ground every clinical claim ONLY within these trusted source categories, and reason like a careful nurse educator would using them:
+${knowledgeContextBlock()}
+
+MANDATORY: For every substantive clinical claim you make, include a "trustworthiness" score (0-100 integer) reflecting how well-established / guideline-supported the information is, plus a one-sentence "trustReasoning" explaining that score with reference to which source category it rests on (e.g. "well-established pathophysiology, consistent across core textbooks" vs "practice varies by institution, moderate confidence"). Never fabricate a citation to a specific study, page number, or named article — refer only to the source categories above in general terms.
+`.trim();
+}
+
+/* ================= UI helpers ================= */
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function trustBadge(score, reasoning){
+  score = Math.max(0, Math.min(100, Number(score)||0));
+  const cls = score >= 85 ? "high" : score >= 65 ? "mid" : "low";
+  const label = score >= 85 ? "High confidence" : score >= 65 ? "Moderate confidence" : "Low confidence — verify";
+  return `<div>
+    <span class="trust ${cls}"><span class="bar"><i style="width:${score}%"></i></span>${score}% · ${label}</span>
+    ${reasoning ? `<div class="sources-note">${escapeHtml(reasoning)}</div>` : ""}
+  </div>`;
+}
+
+/* ---------------- Tabs ---------------- */
+function switchTab(tab){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.navitem').forEach(n => n.classList.remove('active'));
+  const view = document.getElementById('view-'+tab);
+  if(view) view.classList.add('active');
+  const nav = document.querySelector(`.navitem[data-tab="${tab}"]`);
+  if(nav) nav.classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+}
+document.querySelectorAll('.navitem[data-tab]').forEach(btn => btn.onclick = () => switchTab(btn.dataset.tab));
+document.querySelectorAll('[data-goto]').forEach(btn => btn.onclick = () => switchTab(btn.dataset.goto));
+
+/* ================= Settings ================= */
+document.getElementById('saveKey').onclick = () => {
+  CONFIG.apiKey = document.getElementById('apiKeyInput').value.trim();
+  CONFIG.model = document.getElementById('modelInput').value.trim() || CONFIG.model;
+  const note = document.getElementById('keySavedNote');
+  note.textContent = CONFIG.apiKey ? "Saved for this session ✓" : "Key cleared";
+  setTimeout(() => note.textContent = "", 2500);
+};
+document.getElementById('peekKB').onclick = () => {
+  switchTab('settings');
+  alert("Agent 8 grounds responses in these categories:\n\n" + KNOWLEDGE_SOURCES.map(s=>`• ${s.name} — ${s.detail}`).join("\n"));
+};
+
+/* ================= AGENT 1: Learner Profiling ================= */
+function renderLevelRow(){
+  const row = document.getElementById('levelRow');
+  row.innerHTML = LEVELS.map(l => `
+    <button class="level-chip ${state.profile.level===l.v?'sel':''}" data-lvl="${l.v}">
+      ${l.v}<small>${l.label}</small>
+    </button>`).join("");
+  row.querySelectorAll('.level-chip').forEach(chip => {
+    chip.onclick = () => {
+      state.profile.level = Number(chip.dataset.lvl);
+      renderLevelRow();
+    };
+  });
+  document.getElementById('levelHint').textContent =
+    `Level ${state.profile.level}/5 — ${LEVELS[state.profile.level-1].label}: ${LEVELS[state.profile.level-1].desc}.`;
+}
+renderLevelRow();
+
+function tagInputSetup(inputId, listId, arrKey){
+  const input = document.getElementById(inputId);
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && input.value.trim()){
+      e.preventDefault();
+      state.profile[arrKey].push(input.value.trim());
+      input.value = "";
+      renderTags(listId, arrKey);
+    }
+  });
+}
+function renderTags(listId, arrKey){
+  const el = document.getElementById(listId);
+  el.innerHTML = state.profile[arrKey].map((t,i) =>
+    `<span class="tag">${escapeHtml(t)} <button data-i="${i}" data-arr="${arrKey}">✕</button></span>`).join("");
+  el.querySelectorAll('button').forEach(b => b.onclick = () => {
+    state.profile[b.dataset.arr].splice(Number(b.dataset.i),1);
+    renderTags(listId, arrKey);
+  });
+}
+tagInputSetup('pf-strength-input','pf-strengths','strengths');
+tagInputSetup('pf-weak-input','pf-weaknesses','weaknesses');
+
+document.getElementById('saveProfile').onclick = async () => {
+  state.profile.goal = document.getElementById('pf-goal').value.trim();
+  state.profile.specialty = document.getElementById('pf-specialty').value.trim();
+  state.profile.saved = true;
+
+  await Orchestrator.run("Learner Profiling Agent",
+    `Save/update profile for a level ${state.profile.level} learner.`,
+    async () => { renderProfileSummary(); return true; });
+
+  const note = document.getElementById('profileSavedNote');
+  note.textContent = "Saved ✓ — every agent will now use this profile.";
+  setTimeout(()=> note.textContent = "", 3000);
+};
+
+function renderProfileSummary(){
+  const p = state.profile;
+  document.getElementById('profileSummaryCard').style.display = 'block';
+  document.getElementById('profileSummary').innerHTML = `
+    <b>Level:</b> ${p.level}/5 — ${LEVELS[p.level-1].label}<br>
+    <b>Goal:</b> ${escapeHtml(p.goal)||'—'}<br>
+    <b>Specialty:</b> ${escapeHtml(p.specialty)||'General'}<br>
+    <b>Strengths:</b> ${p.strengths.map(escapeHtml).join(', ')||'—'}<br>
+    <b>To improve:</b> ${p.weaknesses.map(escapeHtml).join(', ')||'—'}
+  `;
+}
+
+/* ================= AGENT 2: Clinical Reasoning Chat ================= */
+const chatLog = document.getElementById('chatLog');
+function addMsg(role, html){
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = html;
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return div;
+}
+addMsg('system-note', 'Describe a symptom or clinical case to begin. Explanations are paced step by step regardless of your level, in plain language.');
+
+document.getElementById('sendChat').onclick = sendChat;
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); }
+});
+
+async function sendChat(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = "";
+  addMsg('user', escapeHtml(text));
+  state.chatMessages.push({role:"user", content:text});
+  const typing = addMsg('ai', '<div class="typing"><span></span><span></span><span></span></div>');
+
+  const system = `You are the Clinical Reasoning Agent inside a nursing tutor app.
+${buildAgentEightContext()}
+
+TASK: The learner described a clinical case or symptom. Walk them through clinical reasoning STEP BY STEP, always at a BEGINNER-friendly pace and plain language (avoid unexplained jargon; define any clinical term you use), even though this may be adapted in emphasis for the learner's actual level.
+Use the nursing clinical judgment sequence loosely: recognize cues -> analyze/interpret -> prioritize hypotheses -> what to do next -> how to evaluate.
+Respond ONLY with valid JSON, no markdown fences, matching exactly this shape:
+{
+  "steps": [{"title": "short step name", "explanation": "2-4 plain-language sentences"}],
+  "keyTeachingPoint": "one sentence takeaway",
+  "trustworthiness": 0-100,
+  "trustReasoning": "one sentence"
+}
+Produce 3-6 steps depending on case complexity.`;
+
+  try{
+    const result = await Orchestrator.run("Clinical Reasoning Agent",
+      `Walk learner through: "${text.slice(0,80)}..."`,
+      () => callClaude(system, state.chatMessages, {json:true}));
+
+    typing.remove();
+    const stepsHtml = result.steps.map((s,i) =>
+      `<div class="step"><div class="step-title">Step ${i+1} · ${escapeHtml(s.title)}</div>${escapeHtml(s.explanation)}</div>`).join("");
+    const html = `${stepsHtml}
+      <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-weight:600; font-size:13px;">💡 ${escapeHtml(result.keyTeachingPoint||"")}</div>
+      <div style="margin-top:10px;">${trustBadge(result.trustworthiness, result.trustReasoning)}</div>`;
+    addMsg('ai', html);
+    state.chatMessages.push({role:"assistant", content: JSON.stringify(result)});
+  }catch(e){
+    typing.remove();
+    addMsg('ai', `<div style="color:var(--coral)">Couldn't complete that step: ${escapeHtml(e.message)}</div>`);
+  }
+}
+
+/* ================= AGENT 3 + 4: Quiz Generator + Feedback ================= */
+document.getElementById('genQuiz').onclick = generateQuiz;
+
+async function generateQuiz(){
+  const topic = document.getElementById('qz-topic').value.trim();
+  if(!topic){ alert("Enter a topic first."); return; }
+  const count = document.getElementById('qz-count').value;
+  const style = document.getElementById('qz-style').value;
+  const diffSel = document.getElementById('qz-diff').value;
+  const difficulty = diffSel === "matched to profile level" ? `matched to level ${state.profile.level}/5 (${LEVELS[state.profile.level-1].label})` : `level ${diffSel}/5`;
+
+  const area = document.getElementById('quizArea');
+  area.innerHTML = `<div class="card"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  document.getElementById('feedbackArea').innerHTML = "";
+
+  const system = `You are the Quiz Generator Agent inside a nursing tutor app.
+${buildAgentEightContext()}
+
+TASK: Create ${count} ${style} nursing exam-style questions on the topic "${topic}", difficulty ${difficulty}.
+Respond ONLY with valid JSON, no markdown fences, in exactly this shape:
+{
+  "questions": [
+    {
+      "question": "text",
+      "options": ["option A text", "option B text", "option C text", "option D text"],
+      "correctIndex": 0,
+      "explanation": "why the correct answer is correct and others are wrong, plain language",
+      "trustworthiness": 0-100,
+      "trustReasoning": "one sentence"
+    }
+  ]
+}
+For true/false use exactly options ["True","False"]. For select-all-that-apply, note the multiple correct answers within the explanation and still set correctIndex to the single best/primary answer.`;
+
+  try{
+    const result = await Orchestrator.run("Quiz Generator Agent",
+      `Generate ${count} ${style} questions on "${topic}" at ${difficulty}.`,
+      () => callClaude(system, [{role:"user", content:`Generate the quiz now.`}], {json:true, maxTokens:2400}));
+
+    state.lastQuiz = {topic, difficulty, questions: result.questions, answers: new Array(result.questions.length).fill(null), submitted:false};
+    renderQuiz();
+  }catch(e){
+    area.innerHTML = `<div class="banner err"><div><strong>Couldn't generate quiz</strong>${escapeHtml(e.message)}</div></div>`;
+  }
+}
+
+function renderQuiz(){
+  const q = state.lastQuiz;
+  const area = document.getElementById('quizArea');
+  const answeredCount = q.answers.filter(a => a !== null).length;
+  let html = `<div class="card">
+    <h3>${escapeHtml(q.topic)} <span style="font-weight:400;color:var(--ink-faint);font-size:12.5px;">· ${escapeHtml(q.difficulty)}</span></h3>
+    <div class="progress-track"><div class="progress-fill" style="width:${(answeredCount/q.questions.length)*100}%"></div></div>`;
+
+  q.questions.forEach((item, qi) => {
+    html += `<div class="qcard">
+      <div style="font-weight:600; margin-bottom:10px;">${qi+1}. ${escapeHtml(item.question)}</div>`;
+    item.options.forEach((opt, oi) => {
+      const checked = q.answers[qi] === oi ? "checked" : "";
+      let cls = "opt";
+      if(q.submitted){
+        if(oi === item.correctIndex) cls += " correct";
+        else if(q.answers[qi] === oi) cls += " incorrect";
+      }
+      html += `<label class="${cls}">
+        <input type="radio" name="q${qi}" value="${oi}" ${checked} ${q.submitted?"disabled":""} onchange="setQuizAnswer(${qi},${oi})">
+        <span>${escapeHtml(opt)}</span>
+      </label>`;
+    });
+    html += `</div>`;
+  });
+
+  html += q.submitted
+    ? `<div class="hint">Scroll down for Agent 4's feedback.</div>`
+    : `<button class="btn" id="submitQuizBtn" ${answeredCount<q.questions.length?"disabled":""}>Submit answers (${answeredCount}/${q.questions.length})</button>`;
+  html += `</div>`;
+  area.innerHTML = html;
+  if(!q.submitted){
+    const btn = document.getElementById('submitQuizBtn');
+    if(btn) btn.onclick = submitQuiz;
+  }
+}
+window.setQuizAnswer = (qi, oi) => {
+  state.lastQuiz.answers[qi] = oi;
+  renderQuiz();
+};
+
+async function submitQuiz(){
+  const q = state.lastQuiz;
+  q.submitted = true;
+  renderQuiz();
+
+  const correctCount = q.questions.reduce((sum, item, i) => sum + (q.answers[i] === item.correctIndex ? 1 : 0), 0);
+  const pct = Math.round((correctCount / q.questions.length) * 100);
+
+  state.performanceHistory.push({
+    date: new Date().toISOString(),
+    topic: q.topic,
+    level: state.profile.level,
+    score: correctCount,
+    total: q.questions.length,
+    pct
+  });
+
+  const area = document.getElementById('feedbackArea');
+  area.innerHTML = `<div class="card"><div class="typing"><span></span><span></span><span></span></div></div>`;
+
+  const missed = q.questions.map((item,i) => ({...item, i, chosen: q.answers[i]})).filter(x => x.chosen !== x.correctIndex);
+
+  const system = `You are the Feedback Agent inside a nursing tutor app.
+${buildAgentEightContext()}
+
+TASK: The learner scored ${correctCount}/${q.questions.length} (${pct}%) on a quiz about "${q.topic}".
+Here are the questions they got WRONG (JSON): ${JSON.stringify(missed.map(m => ({question:m.question, options:m.options, correctIndex:m.correctIndex, theyChose:m.chosen})))}
+
+For each wrong answer: explain the error in SIMPLE words (why their choice seemed reasonable but is incorrect), then give the evidence-based correction. This must be real-time, concrete, and actionable — not generic.
+Respond ONLY with valid JSON, no markdown fences, in exactly this shape:
+{
+  "overallSummary": "2-3 encouraging but honest sentences about overall performance and pattern of errors",
+  "itemFeedback": [
+    {"questionIndex": 0, "simpleExplanation": "why the wrong choice seemed right but isn't", "evidenceBasedCorrection": "the correct reasoning, grounded", "trustworthiness": 0-100, "trustReasoning": "one sentence"}
+  ],
+  "trustworthiness": 0-100,
+  "trustReasoning": "one sentence about overall feedback confidence"
+}
+If there were zero wrong answers, itemFeedback should be an empty array and overallSummary should praise the strong result and note what made these answers solid.`;
+
+  try{
+    const result = await Orchestrator.run("Feedback Agent",
+      `Explain ${missed.length} missed item(s) for "${q.topic}" quiz.`,
+      () => callClaude(system, [{role:"user", content:"Provide feedback now."}], {json:true, maxTokens:2200}));
+
+    let html = `<div class="card">
+      <h3>Score: ${correctCount}/${q.questions.length} (${pct}%)</h3>
+      <p style="font-size:13.5px; color:var(--ink-soft);">${escapeHtml(result.overallSummary)}</p>
+      <div style="margin:10px 0;">${trustBadge(result.trustworthiness, result.trustReasoning)}</div>`;
+
+    if(result.itemFeedback && result.itemFeedback.length){
+      html += `<h3 style="margin-top:16px;">Where to focus</h3>`;
+      result.itemFeedback.forEach(fb => {
+        const item = q.questions[fb.questionIndex];
+        html += `<div class="feedback-item wrong">
+          <div style="font-weight:600; font-size:13px; margin-bottom:4px;">Q${fb.questionIndex+1}: ${escapeHtml(item?item.question:"")}</div>
+          <div style="font-size:13px; margin-bottom:6px;"><b>In plain words:</b> ${escapeHtml(fb.simpleExplanation)}</div>
+          <div style="font-size:13px; margin-bottom:6px;"><b>Evidence-based correction:</b> ${escapeHtml(fb.evidenceBasedCorrection)}</div>
+          ${trustBadge(fb.trustworthiness, fb.trustReasoning)}
+        </div>`;
+      });
+    } else {
+      html += `<div class="feedback-item right">Perfect set — no corrections needed this round.</div>`;
+    }
+    html += `<button class="btn secondary small" style="margin-top:6px;" onclick="switchTab('planner')">Update my learning plan →</button></div>`;
+    area.innerHTML = html;
+  }catch(e){
+    area.innerHTML = `<div class="banner err"><div><strong>Couldn't generate feedback</strong>${escapeHtml(e.message)}</div></div>`;
+  }
+}
+
+/* ================= AGENT 5: Learning Planner ================= */
+document.getElementById('genPlan').onclick = generatePlan;
+
+async function generatePlan(){
+  const days = document.getElementById('pl-days').value;
+  const mins = document.getElementById('pl-mins').value;
+  const target = document.getElementById('pl-target').value.trim();
+  const area = document.getElementById('planArea');
+  area.innerHTML = `<div class="card"><div class="typing"><span></span><span></span><span></span></div></div>`;
+
+  const system = `You are the Learning Planner Agent inside a nursing tutor app.
+${buildAgentEightContext()}
+
+TASK: Build a study plan for ${days} sessions/week at ${mins} minutes/session. ${target ? `Target/deadline: ${target}.` : "No fixed deadline given."}
+Base topic priority on the learner's weaknesses and recent low-scoring quiz topics first, then goal-relevant topics.
+Respond ONLY with valid JSON, no markdown fences, in exactly this shape:
+{
+  "weeklyPlan": [{"day":"Day 1","focus":"topic name","activities":["short activity","short activity"],"durationMins":${mins}}],
+  "nextTopics": ["topic1","topic2","topic3"],
+  "simulatedOutcome": "2-3 sentences simulating where the learner should be in competency after following this plan for 3-4 weeks",
+  "trustworthiness": 0-100,
+  "trustReasoning": "one sentence"
+}
+weeklyPlan should have exactly ${days} entries.`;
+
+  try{
+    const result = await Orchestrator.run("Learning Planner Agent",
+      `Build a ${days}x${mins}min/week plan.${target?" Target: "+target:""}`,
+      () => callClaude(system, [{role:"user", content:"Build the plan now."}], {json:true, maxTokens:1800}));
+
+    state.lastPlan = result;
+    let html = `<div class="card">
+      <h3>Weekly plan</h3>`;
+    result.weeklyPlan.forEach(d => {
+      html += `<div class="plan-day">
+        <div class="dlabel">${escapeHtml(d.day)}</div>
+        <div class="dbody">
+          <div class="dfocus">${escapeHtml(d.focus)} <span style="font-weight:400; color:var(--ink-faint); font-size:12px;">· ${d.durationMins||mins} min</span></div>
+          <ul>${(d.activities||[]).map(a => `<li>${escapeHtml(a)}</li>`).join("")}</ul>
+        </div>
+      </div>`;
+    });
+    html += `</div>
+      <div class="card">
+        <h3>Recommended next topics</h3>
+        <div class="taglist">${(result.nextTopics||[]).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>
+        <h3 style="margin-top:16px;">Simulated outcome</h3>
+        <p style="font-size:13.5px; color:var(--ink-soft);">${escapeHtml(result.simulatedOutcome)}</p>
+        ${trustBadge(result.trustworthiness, result.trustReasoning)}
+      </div>`;
+    area.innerHTML = html;
+  }catch(e){
+    area.innerHTML = `<div class="banner err"><div><strong>Couldn't build plan</strong>${escapeHtml(e.message)}</div></div>`;
+  }
+}
+
+/* ================= AGENT 6: Progress Analysis ================= */
+function renderAnalytics(){
+  const area = document.getElementById('analyticsArea');
+  const hist = state.performanceHistory;
+  if(!hist.length){
+    area.innerHTML = `<div class="empty card"><h4>No quiz data yet</h4>Take a quiz to see your competency trend appear here.</div>`;
+    return;
+  }
+  const avg = Math.round(hist.reduce((s,h)=>s+h.pct,0)/hist.length);
+  const last = hist[hist.length-1];
+  const trendDelta = hist.length > 1 ? last.pct - hist[hist.length-2].pct : 0;
+  const byTopic = {};
+  hist.forEach(h => { (byTopic[h.topic] = byTopic[h.topic]||[]).push(h.pct); });
+
+  let html = `<div class="stat-row">
+    <div class="stat"><div class="num">${hist.length}</div><div class="lbl">Quizzes taken</div></div>
+    <div class="stat"><div class="num">${avg}%</div><div class="lbl">Average score</div></div>
+    <div class="stat"><div class="num">${last.pct}%</div><div class="lbl">Most recent</div></div>
+    <div class="stat"><div class="num" style="color:${trendDelta>=0?'var(--green)':'var(--coral)'}">${trendDelta>=0?'+':''}${trendDelta}%</div><div class="lbl">Trend vs prior</div></div>
+  </div>
+  <div class="card"><h3>Score over time</h3><canvas id="trendCanvas" width="880" height="220"></canvas></div>
+  <div class="card"><h3>Competency by topic</h3><canvas id="topicCanvas" width="880" height="${Math.max(120, Object.keys(byTopic).length*38)}"></canvas></div>`;
+  area.innerHTML = html;
+  drawTrend(hist);
+  drawTopics(byTopic);
+}
+
+function drawTrend(hist){
+  const c = document.getElementById('trendCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height, pad = 34;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle = "#D8E6E1"; ctx.lineWidth = 1;
+  for(let g=0; g<=4; g++){
+    const y = pad + (H-2*pad)*g/4;
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+    ctx.fillStyle = "#89A29F"; ctx.font = "10px IBM Plex Mono"; ctx.fillText(`${100-g*25}%`, 2, y+3);
+  }
+  const pts = hist.map((h,i) => ({
+    x: pad + (W-2*pad) * (hist.length===1?0:i/(hist.length-1)),
+    y: pad + (H-2*pad) * (1 - h.pct/100)
+  }));
+  ctx.strokeStyle = "#2C6E6B"; ctx.lineWidth = 2.5; ctx.beginPath();
+  pts.forEach((p,i) => i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.stroke();
+  pts.forEach((p,i) => {
+    ctx.fillStyle = "#2C6E6B"; ctx.beginPath(); ctx.arc(p.x,p.y,4,0,7); ctx.fill();
+    ctx.fillStyle = "#51706D"; ctx.font = "10px Inter";
+    ctx.fillText(hist[i].topic.slice(0,10), p.x-14, H-10);
+  });
+}
+function drawTopics(byTopic){
+  const c = document.getElementById('topicCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height, pad = 10, rowH = 32;
+  ctx.clearRect(0,0,W,H);
+  const topics = Object.keys(byTopic);
+  topics.forEach((t,i) => {
+    const scores = byTopic[t];
+    const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+    const y = pad + i*rowH;
+    ctx.fillStyle = "#51706D"; ctx.font = "12px Inter";
+    ctx.fillText(t.slice(0,26), 0, y+14);
+    const barX = 190, barMaxW = W-barX-60;
+    ctx.fillStyle = "#EAF1EE"; ctx.fillRect(barX, y+2, barMaxW, 16);
+    const color = avg>=80?"#4C8C6B":avg>=60?"#AC8526":"#DE7256";
+    ctx.fillStyle = color; ctx.fillRect(barX, y+2, barMaxW*(avg/100), 16);
+    ctx.fillStyle = "#17302F"; ctx.font = "11px IBM Plex Mono";
+    ctx.fillText(Math.round(avg)+"%", barX+barMaxW+8, y+14);
+  });
+}
+
+/* re-render analytics whenever that tab is opened */
+document.querySelector('.navitem[data-tab="analytics"]').addEventListener('click', renderAnalytics);
+
+/* ================= init ================= */
+renderPipeline();
+renderProfileSummary();
+</script>
+</body>
+</html>
